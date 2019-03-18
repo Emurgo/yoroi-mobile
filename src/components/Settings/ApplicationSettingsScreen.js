@@ -81,12 +81,8 @@ const onToggleBiometricsAuthIn = ({
 }
 
 const updateDeviceSettings = async ({setAppSettingField}) => {
-  // prettier-ignore
-  const isHardwareSupported =
-    await isBiometricEncryptionHardwareSupported()
-  // prettier-ignore
-  const canEnableBiometricEncryption =
-    await canBiometricEncryptionBeEnabled()
+  const isHardwareSupported = await isBiometricEncryptionHardwareSupported()
+  const canEnableBiometricEncryption = await canBiometricEncryptionBeEnabled()
 
   await setAppSettingField(
     APP_SETTINGS_KEYS.BIOMETRIC_HW_SUPPORT,

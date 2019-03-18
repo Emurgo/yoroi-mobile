@@ -35,9 +35,7 @@ class KeyStore {
     switch (encryptionMethod) {
       case 'BIOMETRICS': {
         let decryptedKey = ''
-        // prettier-ignore
-        const isBiometricPromptSupported =
-          await KeyStoreBridge.isBiometricPromptSupported()
+        const isBiometricPromptSupported = await KeyStoreBridge.isBiometricPromptSupported()
 
         if (isBiometricPromptSupported) {
           decryptedKey = await KeyStoreBridge.decryptDataWithBiometricPrompt(
