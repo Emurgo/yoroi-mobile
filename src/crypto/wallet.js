@@ -239,8 +239,8 @@ export class Wallet {
     let keepGoing = true
     while (keepGoing) {
       keepGoing = await this._transactionCache.doSyncStep([
-        ...this._internalChain.getBlocks(),
-        ...this._externalChain.getBlocks(),
+        ...this._internalChain.getAddressChunks(),
+        ...this._externalChain.getAddressChunks(),
       ])
     }
 
