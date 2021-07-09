@@ -19,6 +19,7 @@ function loadStories() {
 	require('../src/components/MaintenanceScreen.stories');
 	require('../src/components/Send/BiometricAuthScreen.stories');
 	require('../src/components/UiKit/Button.stories');
+	require('../src/components/UiKit/TextInput.stories');
 	require('../src/components/WalletInit/ConnectNanoX/CheckNanoXScreen.stories');
 	require('../src/components/WalletInit/ConnectNanoX/ConnectNanoXScreen.stories');
 	require('../src/components/WalletInit/ConnectNanoX/SaveNanoXScreen.stories');
@@ -51,6 +52,7 @@ const stories = [
 	'../src/components/MaintenanceScreen.stories',
 	'../src/components/Send/BiometricAuthScreen.stories',
 	'../src/components/UiKit/Button.stories',
+	'../src/components/UiKit/TextInput.stories',
 	'../src/components/WalletInit/ConnectNanoX/CheckNanoXScreen.stories',
 	'../src/components/WalletInit/ConnectNanoX/ConnectNanoXScreen.stories',
 	'../src/components/WalletInit/ConnectNanoX/SaveNanoXScreen.stories',
