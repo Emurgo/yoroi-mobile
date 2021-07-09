@@ -1,110 +1,103 @@
 // @flow
 import React, {PureComponent} from 'react'
 import {connect} from 'react-redux'
-import {compose} from 'redux'
 import {View, ScrollView} from 'react-native'
 import {SafeAreaView} from 'react-native-safe-area-context'
-import _ from 'lodash'
-import {withHandlers} from 'recompose'
 import {injectIntl, defineMessages, type IntlShape} from 'react-intl'
 
-import {Button, ValidatedTextInput, StatusBar} from '../UiKit'
+import {Button, TextInput} from '../UiKit'
 import {
   validatePassword,
   getWalletNameError,
   validateWalletName,
+  REQUIRED_PASSWORD_LENGTH,
 } from '../../utils/validators'
 import {CONFIG} from '../../config/config'
-import PasswordStrengthIndicator from './PasswordStrengthIndicator'
 import styles from './styles/WalletForm.style'
 import {walletNamesSelector} from '../../selectors'
 import globalMessages from '../../i18n/global-messages'
 
-import type {
-  PasswordValidationErrors,
-  WalletNameValidationErrors,
-} from '../../utils/validators'
 import type {Navigation} from '../../types/navigation'
+
+const WalletNameInput = TextInput
+const PasswordInput = TextInput
+const PasswordConfirmationInput = TextInput
 
 const messages = defineMessages({
   walletNameInputLabel: {
     id: 'components.walletinit.walletform.walletNameInputLabel',
     defaultMessage: '!!!Wallet name',
-    description: 'some desc',
   },
   newPasswordInput: {
     id: 'components.walletinit.walletform.newPasswordInput',
     defaultMessage: '!!!Spending password',
-    description: 'some desc',
   },
   continueButton: {
     id: 'components.walletinit.walletform.continueButton',
     defaultMessage: '!!!Continue',
-    description: 'some desc',
+  },
+  passwordStrengthRequirement: {
+    id:
+      'components.walletinit.createwallet.createwalletscreen.passwordLengthRequirement',
+    defaultMessage: '!!!Minimum characters',
   },
   repeatPasswordInputLabel: {
     id: 'components.walletinit.walletform.repeatPasswordInputLabel',
     defaultMessage: '!!!Repeat password',
-    description: 'some desc',
   },
   repeatPasswordInputError: {
     id: 'components.walletinit.walletform.repeatPasswordInputError',
     defaultMessage: '!!!Passwords do not match',
-    description: 'some desc',
   },
 })
-
-type FormValidationErrors = {
-  nameErrors: WalletNameValidationErrors,
-  passwordErrors: PasswordValidationErrors,
-}
 
 type ComponentState = {
   name: string,
   password: string,
   passwordConfirmation: string,
-  showPasswordsDoNotMatchError: boolean,
+  passwordConfirmationErrorEnabled: boolean,
+  walletNameErrorEnabled: boolean,
+  passwordErrorEnabled: boolean,
 }
 
 type Props = {
   intl: IntlShape,
   walletNames: Array<string>,
-  onSubmit: ({
-    name: string,
-    password: string,
-  }) => mixed,
-  validateWalletName: (walletName: string) => WalletNameValidationErrors,
+  onSubmit: ({name: string, password: string}) => mixed,
   navigation: Navigation,
 }
 
 class WalletForm extends PureComponent<Props, ComponentState> {
+  passwordInputRef: {current: null | {focus: () => void}}
+  repeatPasswordInputRef: {current: null | {focus: () => void}}
+
+  passwordInputRef = React.createRef()
+  repeatPasswordInputRef = React.createRef()
+
   /* prettier-ignore */
   state = CONFIG.DEBUG.PREFILL_FORMS
     ? {
       name: CONFIG.DEBUG.WALLET_NAME,
       password: CONFIG.DEBUG.PASSWORD,
       passwordConfirmation: CONFIG.DEBUG.PASSWORD,
-      showPasswordsDoNotMatchError: false,
+      walletNameErrorEnabled: false,
+      passwordErrorEnabled: false,
+      passwordConfirmationErrorEnabled: false,
     }
     : {
       name: '',
       password: '',
       passwordConfirmation: '',
-      showPasswordsDoNotMatchError: false,
+      walletNameErrorEnabled: false,
+      passwordErrorEnabled: false,
+      passwordConfirmationErrorEnabled: false,
     }
 
   _unsubscribe: void | (() => mixed) = undefined
 
-  debouncedHandlePasswordMatchValidation = _.debounce(() => {
-    this.setState(({password, passwordConfirmation}) => ({
-      showPasswordsDoNotMatchError:
-        !!passwordConfirmation && password !== passwordConfirmation,
-    }))
-  }, 300)
-
   componentDidMount = () => {
     this._unsubscribe = this.props.navigation.addListener('blur', () =>
-      this.handleOnWillBlur(),
+      this.setState({password: '', passwordConfirmation: ''}),
     )
   }
 
@@ -112,109 +105,158 @@ class WalletForm extends PureComponent<Props, ComponentState> {
     if (this._unsubscribe != null) this._unsubscribe()
   }
 
-  handleOnWillBlur = () =>
-    this.setState({
-      password: '',
-      passwordConfirmation: '',
-    })
-
-  handleSubmit = () => {
-    const {name, password} = this.state
-
-    this.props.onSubmit({name, password})
+  enablePasswordAndRepeatPasswordErrors = () => {
+    this.state.password &&
+      this.setState(() => ({
+        passwordErrorEnabled: true,
+        passwordConfirmationErrorEnabled: true,
+      }))
   }
 
-  handleSetName = (name) => this.setState({name})
+  enableRepeatPasswordErrors = () => {
+    this.state.passwordConfirmation &&
+      this.setState(() => ({passwordConfirmationErrorEnabled: true}))
+  }
 
   handleSetPassword = (password) => {
-    this.debouncedHandlePasswordMatchValidation()
-    this.setState({password})
+    this.setState({password, passwordErrorEnabled: false})
   }
 
   handleSetPasswordConfirmation = (passwordConfirmation) => {
-    this.debouncedHandlePasswordMatchValidation()
-    this.setState({passwordConfirmation})
-  }
-
-  validateForm = (): FormValidationErrors => {
-    const {name, password, passwordConfirmation} = this.state
-
-    const nameErrors = this.props.validateWalletName(name)
-    const passwordErrors = validatePassword(password, passwordConfirmation)
-
-    return {
-      nameErrors,
-      passwordErrors,
-    }
+    this.setState({
+      passwordConfirmation,
+      passwordConfirmationErrorEnabled: false,
+    })
   }
 
   render() {
-    const {intl} = this.props
+    const {intl, walletNames} = this.props
     const {
       name,
       password,
       passwordConfirmation,
-      showPasswordsDoNotMatchError,
+      walletNameErrorEnabled,
+      passwordErrorEnabled,
+      passwordConfirmationErrorEnabled,
     } = this.state
 
-    const validationErrors = this.validateForm()
+    const nameErrors = validateWalletName(name, null, walletNames)
+    const passwordErrors = validatePassword(password, passwordConfirmation)
+
+    const walletNameErrorText =
+      getWalletNameError(
+        {
+          tooLong: intl.formatMessage(globalMessages.walletNameErrorTooLong),
+          nameAlreadyTaken: intl.formatMessage(
+            globalMessages.walletNameErrorNameAlreadyTaken,
+          ),
+          mustBeFilled: intl.formatMessage(
+            globalMessages.walletNameErrorMustBeFilled,
+          ),
+        },
+        nameErrors,
+      ) || undefined
+
+    const passwordErrorText = intl.formatMessage(
+      messages.passwordStrengthRequirement,
+      {
+        requiredPasswordLength: REQUIRED_PASSWORD_LENGTH,
+      },
+    )
+
+    const passwordConfirmationErrorText = intl.formatMessage(
+      messages.repeatPasswordInputError,
+    )
 
     return (
       <SafeAreaView style={styles.safeAreaView}>
-        <StatusBar type="dark" />
-
-        <ScrollView keyboardDismissMode="on-drag">
+        <ScrollView
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps={'always'}
+        >
           <View style={styles.content}>
-            <ValidatedTextInput
+            <WalletNameInput
+              autoFocus
+              enablesReturnKeyAutomatically
+              returnKeyType={'next'}
               label={intl.formatMessage(messages.walletNameInputLabel)}
               value={name}
-              onChangeText={this.handleSetName}
-              error={getWalletNameError(
-                {
-                  tooLong: intl.formatMessage(
-                    globalMessages.walletNameErrorTooLong,
-                  ),
-                  nameAlreadyTaken: intl.formatMessage(
-                    globalMessages.walletNameErrorNameAlreadyTaken,
-                  ),
-                },
-                validationErrors.nameErrors,
-              )}
+              onChangeText={(name) =>
+                this.setState({name, walletNameErrorEnabled: true})
+              }
+              errorText={
+                walletNameErrorEnabled && Object.values(nameErrors).length > 0
+                  ? walletNameErrorText
+                  : undefined
+              }
+              onEndEditing={() => this.setState({walletNameErrorEnabled: true})}
+              onSubmitEditing={() => this.passwordInputRef.current?.focus()}
               testID="walletNameInput"
             />
 
-            <ValidatedTextInput
+            <Spacer />
+
+            <PasswordInput
+              ref={this.passwordInputRef}
+              onSubmitEditing={() =>
+                this.repeatPasswordInputRef.current?.focus()
+              }
+              enablesReturnKeyAutomatically
+              returnKeyType={'next'}
               secureTextEntry
               label={intl.formatMessage(messages.newPasswordInput)}
               value={password}
               onChangeText={this.handleSetPassword}
+              debouncedOnChangeText={this.enablePasswordAndRepeatPasswordErrors}
+              errorText={
+                passwordErrorEnabled && passwordErrors.passwordIsWeak
+                  ? passwordErrorText
+                  : undefined
+              }
+              showCheckmark={!passwordErrors.passwordIsWeak}
+              helperText={intl.formatMessage(
+                messages.passwordStrengthRequirement,
+                {
+                  requiredPasswordLength: REQUIRED_PASSWORD_LENGTH,
+                },
+              )}
+              onEndEditing={() => this.setState({passwordErrorEnabled: true})}
               testID="walletPasswordInput"
             />
 
-            <ValidatedTextInput
+            <Spacer />
+
+            <PasswordConfirmationInput
+              ref={this.repeatPasswordInputRef}
+              enablesReturnKeyAutomatically
+              returnKeyType={'done'}
               secureTextEntry
               label={intl.formatMessage(messages.repeatPasswordInputLabel)}
               value={passwordConfirmation}
               onChangeText={this.handleSetPasswordConfirmation}
-              error={
-                showPasswordsDoNotMatchError &&
-                intl.formatMessage(messages.repeatPasswordInputError)
+              debouncedOnChangeText={this.enableRepeatPasswordErrors}
+              errorText={
+                !passwordErrors.passwordConfirmationReq &&
+                passwordConfirmationErrorEnabled &&
+                passwordErrors.matchesConfirmation
+                  ? passwordConfirmationErrorText
+                  : undefined
+              }
+              showCheckmark={
+                !passwordErrors.passwordConfirmationReq &&
+                !passwordErrors.matchesConfirmation
               }
               testID="walletRepeatPasswordInput"
             />
-
-            <PasswordStrengthIndicator password={password} />
           </View>
         </ScrollView>
 
         <View style={styles.action}>
           <Button
-            onPress={this.handleSubmit}
+            onPress={() => this.props.onSubmit({name, password})}
             disabled={
-              !_.isEmpty({
-                ...validationErrors.nameErrors,
-                ...validationErrors.passwordErrors,
-              })
+              Object.values(nameErrors).length > 0 ||
+              Object.values(passwordErrors).length > 0
             }
             title={intl.formatMessage(messages.continueButton)}
             testID="walletFormContinueButton"
@@ -226,16 +268,7 @@ class WalletForm extends PureComponent<Props, ComponentState> {
 }
 
 export default injectIntl(
-  compose(
-    connect(
-      (state) => ({
-        walletNames: walletNamesSelector(state),
-      }),
-      {validateWalletName},
-    ),
-    withHandlers({
-      validateWalletName: ({walletNames}) => (walletName) =>
-        validateWalletName(walletName, null, walletNames),
-    }),
-  )(WalletForm),
+  connect((state) => ({walletNames: walletNamesSelector(state)}))(WalletForm),
 )
+
+const Spacer = () => <View style={styles.spacer} />
