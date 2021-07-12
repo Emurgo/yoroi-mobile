@@ -6,10 +6,7 @@ import {injectIntl, defineMessages, type IntlShape} from 'react-intl'
 import {Button} from '../UiKit'
 import ReceiveScreen from './ReceiveScreen'
 import {RECEIVE_ROUTES, WALLET_ROOT_ROUTES} from '../../RoutesList'
-import {
-  defaultNavigationOptions,
-  defaultStackNavigatorOptions,
-} from '../../navigationOptions'
+import {defaultNavigationOptions, defaultStackNavigatorOptions} from '../../navigationOptions'
 import iconGear from '../../assets/img/gear.png'
 
 import styles from './styles/SettingsButton.style'
@@ -40,7 +37,6 @@ const ReceiveScreenNavigator = injectIntl(({intl}: {intl: IntlShape}) => (
       name={RECEIVE_ROUTES.MAIN}
       component={ReceiveScreen}
       options={({navigation}) => ({
-        // $FlowFixMe it says optional chain is not required but it is
         title: intl.formatMessage(messages.receiveTitle),
         headerRight: () => (
           <Button
