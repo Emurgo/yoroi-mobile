@@ -9,7 +9,7 @@ export class SubscriptionManager<T> {
   _subscriptions: Array<(T) => any> = []
 
   // We cannot use arrow property initializers because of Flow, see
-  // eslint-disable-next-line max-len
+
   // https://stackoverflow.com/questions/49170385/flow-generics-incompatible-types
 
   constructor() {

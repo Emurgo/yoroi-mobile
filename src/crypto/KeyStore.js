@@ -54,9 +54,8 @@ class KeyStore {
     switch (encryptionMethod) {
       case 'BIOMETRICS': {
         let decryptedKey = ''
-        // prettier-ignore
-        const isBiometricPromptSupported =
-          await KeyStoreBridge.isBiometricPromptSupported()
+
+        const isBiometricPromptSupported = await KeyStoreBridge.isBiometricPromptSupported()
 
         if (isBiometricPromptSupported) {
           decryptedKey = await KeyStoreBridge.decryptDataWithBiometricPrompt(
@@ -217,7 +216,6 @@ class KeyStore {
       return KeyStoreBridge.REJECTION_MESSAGES[key]
     }
 
-    // eslint-disable-next-line
     // from https://opensource.apple.com/source/Security/Security-55471/sec/Security/SecBase.h.auto.html
     if (Platform.OS === 'ios') {
       switch (key) {
