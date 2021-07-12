@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Image,
   TextInput as RNTextInput,
-  Platform,
 } from 'react-native'
 import {HelperText, TextInput as RNPTextInput} from 'react-native-paper'
 import styles from './styles/TextInput.style'
@@ -27,68 +26,65 @@ type Props = {|
   helperText?: string,
   errorText?: string,
   disabled?: boolean,
-  debouncedOnChangeText?: (text: ?string) => any,
+  errorOnMount?: boolean,
+  errorDelay?: number,
 |}
 
-const useDebouncedCallback = ({
-  callback,
-  value,
-  delay,
-}: {
-  callback: (value: any) => any,
-  value: any,
-  delay: number,
-}) => {
+const useDebounced = (callback, value, delay = 1000) => {
+  const first = React.useRef(true)
   React.useEffect(
     () => {
-      const handler = setTimeout(() => callback(value), delay)
+      if (first.current) {
+        first.current = false
+        return () => {
+          return
+        }
+      }
+
+      const handler = setTimeout(() => callback(), delay)
+
       return () => clearTimeout(handler)
     },
     [callback, delay, value],
   )
 }
 
-const NOOP = () => null
-
 const TextInput = React.forwardRef<Props, {focus: () => void}>(
   (
     {
       value,
-      style,
       containerStyle,
       secureTextEntry,
-      keyboardType,
       showCheckmark,
       helperText,
       errorText,
-      autoFocus,
-      debouncedOnChangeText = NOOP,
-      debounceDelay = 1000,
+      errorOnMount,
+      onBlur,
+      errorDelay,
       ...restProps
     },
     ref,
   ) => {
     const [showPassword, setShowPassword] = React.useState(false)
-
-    useDebouncedCallback({
-      callback: debouncedOnChangeText,
+    const [errorTextEnabled, setErrorTextEnabled] = React.useState(errorOnMount)
+    useDebounced(
+      React.useCallback(() => setErrorTextEnabled(true), []),
       value,
-      delay: debounceDelay,
-    })
+      errorDelay,
+    )
 
     return (
       <View style={containerStyle}>
         <RNPTextInput
           ref={ref}
+          onBlur={(event) => {
+            onBlur?.(event)
+            setErrorTextEnabled(true)
+          }}
           value={value}
-          autoFocus={autoFocus}
+          onChange={() => setErrorTextEnabled(false)}
           autoCorrect={false}
           autoCompleteType={'off'}
-          keyboardType={
-            Platform.OS === 'ios' && keyboardType === 'visible-password'
-              ? 'default'
-              : keyboardType
-          }
           theme={{
             roundness: 8,
             colors: {
@@ -100,8 +96,7 @@ const TextInput = React.forwardRef<Props, {focus: () => void}>(
           }}
           secureTextEntry={secureTextEntry && !showPassword}
           mode={'outlined'}
-          error={!!errorText}
-          style={style}
+          error={errorTextEnabled && !!errorText}
           render={(inputProps) => (
             <InputContainer>
               <RNTextInput {...inputProps} />
@@ -120,10 +115,10 @@ const TextInput = React.forwardRef<Props, {focus: () => void}>(
         />
 
         <HelperText
-          type={errorText ? 'error' : 'info'}
-          visible={errorText || helperText}
+          type={errorTextEnabled && !!errorText ? 'error' : 'info'}
+          visible
         >
-          {errorText || helperText}
+          {errorTextEnabled && !!errorText ? errorText : helperText}
         </HelperText>
       </View>
     )

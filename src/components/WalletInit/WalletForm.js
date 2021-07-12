@@ -55,9 +55,6 @@ type ComponentState = {
   name: string,
   password: string,
   passwordConfirmation: string,
-  passwordConfirmationErrorEnabled: boolean,
-  walletNameErrorEnabled: boolean,
-  passwordErrorEnabled: boolean,
 }
 
 type Props = {
@@ -69,10 +66,10 @@ type Props = {
 
 class WalletForm extends PureComponent<Props, ComponentState> {
   passwordInputRef: {current: null | {focus: () => void}}
-  repeatPasswordInputRef: {current: null | {focus: () => void}}
-
   passwordInputRef = React.createRef()
+
   repeatPasswordInputRef = React.createRef()
+  repeatPasswordInputRef: {current: null | {focus: () => void}}
 
   /* prettier-ignore */
   state = CONFIG.DEBUG.PREFILL_FORMS
@@ -80,17 +77,11 @@ class WalletForm extends PureComponent<Props, ComponentState> {
       name: CONFIG.DEBUG.WALLET_NAME,
       password: CONFIG.DEBUG.PASSWORD,
       passwordConfirmation: CONFIG.DEBUG.PASSWORD,
-      walletNameErrorEnabled: false,
-      passwordErrorEnabled: false,
-      passwordConfirmationErrorEnabled: false,
     }
     : {
       name: '',
       password: '',
       passwordConfirmation: '',
-      walletNameErrorEnabled: false,
-      passwordErrorEnabled: false,
-      passwordConfirmationErrorEnabled: false,
     }
 
   _unsubscribe: void | (() => mixed) = undefined
@@ -105,40 +96,17 @@ class WalletForm extends PureComponent<Props, ComponentState> {
     if (this._unsubscribe != null) this._unsubscribe()
   }
 
-  enablePasswordAndRepeatPasswordErrors = () => {
-    this.state.password &&
-      this.setState(() => ({
-        passwordErrorEnabled: true,
-        passwordConfirmationErrorEnabled: true,
-      }))
-  }
-
-  enableRepeatPasswordErrors = () => {
-    this.state.passwordConfirmation &&
-      this.setState(() => ({passwordConfirmationErrorEnabled: true}))
-  }
-
   handleSetPassword = (password) => {
-    this.setState({password, passwordErrorEnabled: false})
+    this.setState({password})
   }
 
   handleSetPasswordConfirmation = (passwordConfirmation) => {
-    this.setState({
-      passwordConfirmation,
-      passwordConfirmationErrorEnabled: false,
-    })
+    this.setState({passwordConfirmation})
   }
 
   render() {
-    const {intl, walletNames} = this.props
-    const {
-      name,
-      password,
-      passwordConfirmation,
-      walletNameErrorEnabled,
-      passwordErrorEnabled,
-      passwordConfirmationErrorEnabled,
-    } = this.state
+    const {intl, walletNames, onSubmit} = this.props
+    const {name, password, passwordConfirmation} = this.state
 
     const nameErrors = validateWalletName(name, null, walletNames)
     const passwordErrors = validatePassword(password, passwordConfirmation)
@@ -169,91 +137,78 @@ class WalletForm extends PureComponent<Props, ComponentState> {
     )
 
     return (
-      <SafeAreaView style={styles.safeAreaView}>
+      <SafeAreaView
+        style={styles.safeAreaView}
+        edges={['left', 'right', 'bottom']}
+      >
         <ScrollView
           keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps={'always'}
+          contentContainerStyle={styles.scrollContentContainer}
         >
-          <View style={styles.content}>
-            <WalletNameInput
-              autoFocus
-              enablesReturnKeyAutomatically
-              returnKeyType={'next'}
-              label={intl.formatMessage(messages.walletNameInputLabel)}
-              value={name}
-              onChangeText={(name) =>
-                this.setState({name, walletNameErrorEnabled: true})
-              }
-              errorText={
-                walletNameErrorEnabled && Object.values(nameErrors).length > 0
-                  ? walletNameErrorText
-                  : undefined
-              }
-              onEndEditing={() => this.setState({walletNameErrorEnabled: true})}
-              onSubmitEditing={() => this.passwordInputRef.current?.focus()}
-              testID="walletNameInput"
-            />
+          <WalletNameInput
+            label={intl.formatMessage(messages.walletNameInputLabel)}
+            errorText={walletNameErrorText}
+            errorDelay={0}
+            autoFocus
+            enablesReturnKeyAutomatically
+            returnKeyType={'next'}
+            value={name}
+            onChangeText={(name) => this.setState({name})}
+            onSubmitEditing={() => this.passwordInputRef.current?.focus()}
+            testID="walletNameInput"
+          />
 
-            <Spacer />
+          <Spacer />
 
-            <PasswordInput
-              ref={this.passwordInputRef}
-              onSubmitEditing={() =>
-                this.repeatPasswordInputRef.current?.focus()
-              }
-              enablesReturnKeyAutomatically
-              returnKeyType={'next'}
-              secureTextEntry
-              label={intl.formatMessage(messages.newPasswordInput)}
-              value={password}
-              onChangeText={this.handleSetPassword}
-              debouncedOnChangeText={this.enablePasswordAndRepeatPasswordErrors}
-              errorText={
-                passwordErrorEnabled && passwordErrors.passwordIsWeak
-                  ? passwordErrorText
-                  : undefined
-              }
-              showCheckmark={!passwordErrors.passwordIsWeak}
-              helperText={intl.formatMessage(
-                messages.passwordStrengthRequirement,
-                {
-                  requiredPasswordLength: REQUIRED_PASSWORD_LENGTH,
-                },
-              )}
-              onEndEditing={() => this.setState({passwordErrorEnabled: true})}
-              testID="walletPasswordInput"
-            />
+          <PasswordInput
+            label={intl.formatMessage(messages.newPasswordInput)}
+            errorText={
+              passwordErrors.passwordIsWeak ? passwordErrorText : undefined
+            }
+            showCheckmark={!passwordErrors.passwordIsWeak}
+            helperText={intl.formatMessage(
+              messages.passwordStrengthRequirement,
+              {
+                requiredPasswordLength: REQUIRED_PASSWORD_LENGTH,
+              },
+            )}
+            ref={this.passwordInputRef}
+            onSubmitEditing={() => this.repeatPasswordInputRef.current?.focus()}
+            enablesReturnKeyAutomatically
+            returnKeyType={'next'}
+            secureTextEntry
+            value={password}
+            onChangeText={this.handleSetPassword}
+            testID="walletPasswordInput"
+          />
 
-            <Spacer />
+          <Spacer />
 
-            <PasswordConfirmationInput
-              ref={this.repeatPasswordInputRef}
-              enablesReturnKeyAutomatically
-              returnKeyType={'done'}
-              secureTextEntry
-              label={intl.formatMessage(messages.repeatPasswordInputLabel)}
-              value={passwordConfirmation}
-              onChangeText={this.handleSetPasswordConfirmation}
-              debouncedOnChangeText={this.enableRepeatPasswordErrors}
-              errorText={
-                !passwordErrors.passwordConfirmationReq &&
-                passwordConfirmationErrorEnabled &&
-                passwordErrors.matchesConfirmation
-                  ? passwordConfirmationErrorText
-                  : undefined
-              }
-              showCheckmark={
-                !passwordErrors.passwordConfirmationReq &&
-                !passwordErrors.matchesConfirmation
-              }
-              testID="walletRepeatPasswordInput"
-            />
-          </View>
+          <PasswordConfirmationInput
+            label={intl.formatMessage(messages.repeatPasswordInputLabel)}
+            errorText={
+              passwordErrors.matchesConfirmation
+                ? passwordConfirmationErrorText
+                : undefined
+            }
+            showCheckmark={
+              !passwordErrors.passwordConfirmationReq &&
+              !passwordErrors.matchesConfirmation
+            }
+            ref={this.repeatPasswordInputRef}
+            enablesReturnKeyAutomatically
+            returnKeyType={'done'}
+            secureTextEntry
+            value={passwordConfirmation}
+            onChangeText={this.handleSetPasswordConfirmation}
+            testID="walletRepeatPasswordInput"
+          />
         </ScrollView>
 
         <View style={styles.action}>
           <Button
-            onPress={() => this.props.onSubmit({name, password})}
+            onPress={() => onSubmit({name, password})}
             disabled={
               Object.values(nameErrors).length > 0 ||
               Object.values(passwordErrors).length > 0

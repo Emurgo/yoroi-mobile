@@ -3,16 +3,20 @@ import {StyleSheet} from 'react-native'
 import {COLORS} from '../../../styles/config'
 
 export default StyleSheet.create({
-  keyboardAvoidingView: {
+  safeAreaView: {
+    backgroundColor: COLORS.BACKGROUND,
     flex: 1,
   },
-  safeAreaView: {
+  scrollContentContainer: {
     flex: 1,
     paddingHorizontal: 16,
-    backgroundColor: COLORS.BACKGROUND,
+    paddingTop: 40,
   },
   action: {
+    padding: 16,
     backgroundColor: COLORS.BACKGROUND,
-    marginBottom: 16,
+  },
+  spacer: {
+    height: 16,
   },
 })
