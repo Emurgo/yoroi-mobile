@@ -66,12 +66,14 @@ export type PasswordStrength = {|
 
 const pickOnlyFailingValidations = (validation: Object) => _.pickBy(validation)
 
+export const REQUIRED_PASSWORD_LENGTH = 10
+
 export const getPasswordStrength = (password: string): PasswordStrength => {
   if (!password) {
     return {isStrong: false}
   }
 
-  if (password.length >= 10) {
+  if (password.length >= REQUIRED_PASSWORD_LENGTH) {
     return {isStrong: true, satisfiesPasswordRequirement: true}
   }
 
@@ -106,15 +108,18 @@ export const getWalletNameError = (
   translations: {
     tooLong: string,
     nameAlreadyTaken: string,
+    mustBeFilled?: string,
   },
   validationErrors: WalletNameValidationErrors,
 ) => {
-  const {tooLong, nameAlreadyTaken} = translations
+  const {tooLong, nameAlreadyTaken, mustBeFilled} = translations
 
   if (validationErrors.tooLong != null) {
     return tooLong
   } else if (validationErrors.nameAlreadyTaken != null) {
     return nameAlreadyTaken
+  } else if (validationErrors.mustBeFilled != null) {
+    return mustBeFilled
   } else {
     return null
   }

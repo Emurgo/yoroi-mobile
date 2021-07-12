@@ -7,14 +7,16 @@ export default StyleSheet.create({
     backgroundColor: COLORS.BACKGROUND,
     flex: 1,
   },
-  container: {
+  scrollContentContainer: {
     flex: 1,
-  },
-  content: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 40,
   },
   action: {
     padding: 16,
     backgroundColor: COLORS.BACKGROUND,
+  },
+  spacer: {
+    height: 16,
   },
 })

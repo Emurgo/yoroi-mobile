@@ -478,6 +478,10 @@ export default defineMessages({
     id: 'global.error.walletNameAlreadyTaken',
     defaultMessage: 'You already have a wallet with this name',
   },
+  walletNameErrorMustBeFilled: {
+    id: 'global.error.walletNameMustBeFilled',
+    defaultMessage: '!!!Must be filled',
+  },
   pleaseWait: {
     id: 'global.pleaseWait',
     defaultMessage: '!!!please wait ...',
